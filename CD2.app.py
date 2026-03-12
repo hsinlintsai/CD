@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 # 設定網頁標題
-st.set_page_config(page_title="元素時速挑戰賽", page_icon="⚡")
+st.set_page_config(page_title="元素時速挑戰", page_icon="⚡")
 
 # --- 1. 排行榜邏輯 ---
 DB_FILE = "leaderboard.csv"
@@ -23,20 +23,22 @@ def save_score(name, score):
 def get_leaderboard():
     if os.path.exists(DB_FILE):
         df = pd.read_csv(DB_FILE)
-        return df.sort_values(by="分數", ascending=False).head(5)
+        # 排序分數，並去除重複名字取最高分
+        df = df.sort_values(by="分數", ascending=False)
+        return df.head(5)
     return None
 
-# --- 2. CSS 修正：文字放大且按鈕精簡 ---
+# --- 2. CSS：文字極大、框框精簡 ---
 st.markdown("""
     <style>
-    button[kind="secondary"] p { font-size: 40px !important; font-weight: 900 !important; }
-    button[kind="secondary"] { height: 70px !important; border-radius: 12px !important; border: 2px solid #E0E0E0 !important; }
-    .next-btn button { background-color: #FF4B4B !important; color: white !important; height: 80px !important; }
-    .next-btn button p { font-size: 30px !important; }
+    button[kind="secondary"] p { font-size: 42px !important; font-weight: 900 !important; }
+    button[kind="secondary"] { height: 75px !important; border-radius: 12px !important; border: 2px solid #E0E0E0 !important; }
+    .next-btn button { background-color: #FF4B4B !important; color: white !important; height: 85px !important; }
+    .next-btn button p { font-size: 32px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. 遊戲資料 ---
+# --- 3. 遊戲資料庫 (國中必考) ---
 if 'db' not in st.session_state:
     st.session_state.db = [
         {"s": "H", "n": "氫"}, {"s": "He", "n": "氦"}, {"s": "Li", "n": "鋰"}, {"s": "Be", "n": "鈹"},
@@ -56,8 +58,11 @@ def get_new_q():
     pool.remove(correct)
     options = random.sample(pool, 3) + [correct]
     random.shuffle(options)
-    return {"text": f"「 {target['s']} 」是什麼？" if mode == 's2n' else f"「 {target['n']} 」的符號？",
+    return {"text": f"「 {target['s'] } 」是什麼？" if mode == 's2n' else f"「 {target['n']} 」的符號？",
             "correct": correct, "options": options, "start_time": time.time()}
+
+# 初始化狀態 (改為 10 題)
+TOTAL_STEPS = 10
 
 if 'step' not in st.session_state:
     st.session_state.step, st.session_state.score = 1, 0
@@ -67,12 +72,12 @@ if 'step' not in st.session_state:
 def play(url):
     st.components.v1.html(f"""<audio autoplay><source src="{url}" type="audio/mpeg"></audio>""", height=0)
 
-# --- 4. 介面 ---
-st.title("⚡ 元素時速排行榜")
+# --- 4. 介面渲染 ---
+st.title("⚡ 元素 10 題速考王")
 
 if not st.session_state.game_over:
-    st.progress(st.session_state.step / 20)
-    st.write(f"第 {st.session_state.step}/20 題 | 總分: **{st.session_state.score}**")
+    st.progress(st.session_state.step / TOTAL_STEPS)
+    st.write(f"第 {st.session_state.step}/{TOTAL_STEPS} 題 | 總分: **{st.session_state.score}**")
     q = st.session_state.q
 
     if st.session_state.feedback:
@@ -80,7 +85,7 @@ if not st.session_state.game_over:
         st.markdown('<div class="next-btn">', unsafe_allow_html=True)
         if st.button("下一題 ➔", use_container_width=True):
             st.session_state.feedback = False
-            if st.session_state.step < 20:
+            if st.session_state.step < TOTAL_STEPS:
                 st.session_state.step += 1
                 st.session_state.q = get_new_q()
             else: st.session_state.game_over = True
@@ -92,10 +97,11 @@ if not st.session_state.game_over:
             if st.button(opt, key=f"opt_{idx}", use_container_width=True):
                 dur = time.time() - q['start_time']
                 if opt == q['correct']:
-                    pts = max(1, int(15 - (dur * 2))) # 提高時間獎勵感
+                    # 答對：基礎 15 分，每秒扣 2.5 分 (更嚴格的時間獎勵)
+                    pts = max(1, int(15 - (dur * 2.5)))
                     st.session_state.score += pts
                     play("https://www.soundjay.com/buttons/sounds/button-37.mp3")
-                    if st.session_state.step < 20:
+                    if st.session_state.step < TOTAL_STEPS:
                         st.session_state.step += 1
                         st.session_state.q = get_new_q()
                         st.rerun()
@@ -107,22 +113,22 @@ else:
     st.balloons()
     st.header(f"🏁 挑戰完成！總得分：{st.session_state.score}")
     
-    # 存入排行榜介面
-    with st.expander("👑 登錄排行榜", expanded=True):
-        name = st.text_input("輸入你的大名：", max_chars=10)
+    # 排行榜登錄
+    with st.expander("👑 登錄排行榜 (前五強)", expanded=True):
+        name = st.text_input("輸入你的暱稱：", max_chars=10)
         if st.button("提交成績"):
             if name:
                 save_score(name, st.session_state.score)
-                st.success("已存入排行榜！")
+                st.success("成功登錄！")
                 st.rerun()
             else: st.warning("請輸入名字喔！")
 
-    st.subheader("🏆 全校前五強")
+    st.subheader("🏆 全班最強 TOP 5")
     lb = get_leaderboard()
     if lb is not None:
         st.table(lb)
     
-    if st.button("重新開始挑戰", use_container_width=True):
+    if st.button("再戰一次 🔄", use_container_width=True):
         st.session_state.step, st.session_state.score = 1, 0
         st.session_state.game_over, st.session_state.feedback = False, False
         st.session_state.q = get_new_q()
