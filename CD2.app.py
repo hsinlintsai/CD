@@ -4,7 +4,24 @@ import random
 # 設定網頁標題
 st.set_page_config(page_title="元素週期表挑戰賽", page_icon="🧪")
 
-# 1. 元素資料庫 (國中必背範圍)
+# --- CSS 樣式調整：將按鈕字體放大為 2 倍 ---
+st.markdown("""
+    <style>
+    div.stButton > button {
+        font-size: 32px !important; /* 字體放大 (約 2 倍) */
+        height: 80px !important;    /* 增加按鈕高度 */
+        border-radius: 15px !important; /* 圓角看起來更像 App */
+        font-weight: bold !important;
+    }
+    /* 答錯回饋按鈕的特殊顏色 */
+    div.stButton > button:contains("我記住了") {
+        background-color: #ff4b4b !important;
+        color: white !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# 1. 元素資料庫
 if 'elements_db' not in st.session_state:
     st.session_state.elements_db = [
         {"s": "H", "n": "氫"}, {"s": "He", "n": "氦"}, {"s": "Li", "n": "鋰"}, {"s": "Be", "n": "鈹"},
@@ -16,15 +33,13 @@ if 'elements_db' not in st.session_state:
         {"s": "Au", "n": "金"}, {"s": "Hg", "n": "汞"}, {"s": "I", "n": "碘"}, {"s": "Ba", "n": "鋇"}
     ]
 
-# 2. 遊戲邏輯函數
+# 2. 遊戲邏輯
 def get_new_question():
     target = random.choice(st.session_state.elements_db)
     mode = random.choice(['s2n', 'n2s'])
     correct_ans = target['n'] if mode == 's2n' else target['s']
     
-    # 產生干擾項
-    all_vals = [el['n'] if mode == 's2n' else el['s'] for el in st.session_state.elements_db]
-    all_vals = list(set(all_vals))
+    all_vals = list(set([el['n'] if mode == 's2n' else el['s'] for el in st.session_state.elements_db]))
     all_vals.remove(correct_ans)
     options = random.sample(all_vals, 3) + [correct_ans]
     random.shuffle(options)
@@ -36,31 +51,26 @@ def get_new_question():
         "full_info": f"{target['n']} ({target['s']})"
     }
 
-# 初始化 Session State
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
     st.session_state.score = 0
     st.session_state.game_over = False
-    st.session_state.show_feedback = False # 是否顯示答錯回饋
-    st.session_state.last_result = None    # 紀錄上一題對錯
+    st.session_state.show_feedback = False
     st.session_state.q = get_new_question()
 
-# --- 介面開始 ---
-st.title("🧪 元素週期表 20題大挑戰")
+# --- 介面設計 ---
+st.title("🧪 元素週期表大挑戰")
 
 if not st.session_state.game_over:
-    # 顯示進度
-    progress = st.session_state.current_step / 20
-    st.progress(progress)
+    st.progress(st.session_state.current_step / 20)
     st.write(f"第 {st.session_state.current_step} / 20 題 | 目前得分: {st.session_state.score}")
     
     q = st.session_state.q
 
-    # 如果正在顯示回饋 (答錯的情況)
     if st.session_state.show_feedback:
         st.error(f"### ❌ 答錯了！")
         st.info(f"正確答案是：**{q['correct']}**")
-        st.write(f"記得喔：{q['full_info']}")
+        st.write(f"複習一下：{q['full_info']}")
         
         if st.button("我記住了，下一題 ➔"):
             st.session_state.show_feedback = False
@@ -70,12 +80,9 @@ if not st.session_state.game_over:
             else:
                 st.session_state.game_over = True
             st.rerun()
-
     else:
-        # 顯示題目
         st.subheader(q['text'])
-        
-        # 四選一按鈕
+        # 四選一按鈕 (字體已透過 CSS 放大)
         cols = st.columns(2)
         for i, option in enumerate(q['options']):
             with cols[i % 2]:
@@ -83,7 +90,6 @@ if not st.session_state.game_over:
                     if option == q['correct']:
                         st.success("✅ 答對了！")
                         st.session_state.score += 5
-                        # 答對直接跳下一題
                         if st.session_state.current_step < 20:
                             st.session_state.current_step += 1
                             st.session_state.q = get_new_question()
@@ -92,15 +98,12 @@ if not st.session_state.game_over:
                             st.session_state.game_over = True
                             st.rerun()
                     else:
-                        # 答錯則進入回饋模式
                         st.session_state.show_feedback = True
                         st.rerun()
-
 else:
-    # 結算畫面
     st.balloons()
     st.success(f"🏆 挑戰完成！最終得分：{st.session_state.score} / 100")
-    if st.button("再玩一次"):
+    if st.button("再挑戰一次"):
         st.session_state.current_step = 1
         st.session_state.score = 0
         st.session_state.game_over = False
