@@ -1,49 +1,34 @@
 import streamlit as st
 import random
-import base64
+import time
 
 # 設定網頁標題
-st.set_page_config(page_title="元素挑戰", page_icon="🧪")
+st.set_page_config(page_title="元素時速挑戰", page_icon="⚡")
 
-# --- 1. 音效功能函數 ---
+# --- 1. 音效功能 ---
 def play_sound(sound_url):
-    # 建立隱藏的音頻播放組件
-    sound_html = f"""
-        <audio autoplay>
-            <source src="{sound_url}" type="audio/mpeg">
-        </audio>
-    """
+    sound_html = f"""<audio autoplay><source src="{sound_url}" type="audio/mpeg"></audio>"""
     st.markdown(sound_html, unsafe_allow_html=True)
 
-# 答對音效：清脆的叮咚聲
 CORRECT_URL = "https://www.soundjay.com/buttons/sounds/button-37.mp3"
-# 答錯音效：沉悶的提示聲
 WRONG_URL = "https://www.soundjay.com/buttons/sounds/button-10.mp3"
 
-# --- 2. CSS 調整：按鈕變窄，文字變得更大更顯眼 ---
+# --- 2. CSS 調整：文字極大化、框框精簡 ---
 st.markdown("""
     <style>
     div.stButton > button p {
-        font-size: 40px !important; 
+        font-size: 42px !important; 
         font-weight: 900 !important;
-        color: #1E1E1E !important;
     }
     div.stButton > button {
-        height: 65px !important;   
-        border-radius: 12px !important;
-        border: 2px solid #D3D3D3 !important;
-        background-color: #F8F9FA !important;
+        height: 70px !important;   
+        border-radius: 15px !important;
         margin-bottom: 10px !important;
+        background-color: #F0F2F6 !important;
     }
-    div.stButton > button:contains("下一題") p {
-        font-size: 28px !important;
-        color: white !important;
-    }
-    div.stButton > button:contains("下一題") {
-        background-color: #FF4B4B !important;
-        border: none !important;
-        height: 70px !important;
-    }
+    /* 下一題按鈕樣式 */
+    div.stButton > button:contains("下一題") p { font-size: 28px !important; color: white !important; }
+    div.stButton > button:contains("下一題") { background-color: #FF4B4B !important; height: 75px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -59,7 +44,7 @@ if 'elements_db' not in st.session_state:
         {"s": "Au", "n": "金"}, {"s": "Hg", "n": "汞"}, {"s": "I", "n": "碘"}, {"s": "Ba", "n": "鋇"}
     ]
 
-# --- 4. 隨機出題邏輯 ---
+# --- 4. 遊戲邏輯 ---
 def get_new_question():
     target = random.choice(st.session_state.elements_db)
     mode = random.choice(['s2n', 'n2s'])
@@ -69,40 +54,36 @@ def get_new_question():
     options = random.sample(all_vals, 3) + [correct_ans]
     random.shuffle(options)
     return {
-        "text": f"符號「 {target['s']} 」是什麼？" if mode == 's2n' else f"元素「 {target['n']} 」的符號？",
+        "text": f"「 {target['s']} 」是什麼？" if mode == 's2n' else f"「 {target['n']} 」的符號？",
         "correct": correct_ans,
         "options": options,
-        "full_info": f"{target['n']} 的符號是 {target['s']}"
+        "start_time": time.time() # 紀錄出題時間
     }
 
-# 初始化
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
     st.session_state.score = 0
     st.session_state.game_over = False
     st.session_state.show_feedback = False
-    st.session_state.play_sound = None  # 紀錄該播放哪種聲音
+    st.session_state.play_sound = None
     st.session_state.q = get_new_question()
 
-# --- 5. 介面 ---
-st.title("🧪 元素 20 題音效版")
+# --- 5. 主畫面 ---
+st.title("⚡ 元素時速挑戰賽")
 
-# 執行音效播放
 if st.session_state.play_sound:
     play_sound(st.session_state.play_sound)
-    st.session_state.play_sound = None # 播放完清除
+    st.session_state.play_sound = None
 
 if not st.session_state.game_over:
     st.progress(st.session_state.current_step / 20)
-    st.write(f"進度: {st.session_state.current_step}/20 | 分數: {st.session_state.score}")
+    st.write(f"### 題數: {st.session_state.current_step}/20 | 目前總分: **{st.session_state.score}**")
     
     q = st.session_state.q
 
     if st.session_state.show_feedback:
         st.error(f"### ❌ 答錯了！")
         st.info(f"正確答案是：**{q['correct']}**")
-        st.write(f"💡 {q['full_info']}")
-        
         if st.button("我記住了，下一題 ➔", use_container_width=True):
             st.session_state.show_feedback = False
             if st.session_state.current_step < 20:
@@ -111,34 +92,16 @@ if not st.session_state.game_over:
             else:
                 st.session_state.game_over = True
             st.rerun()
-
     else:
         st.subheader(q['text'])
-        # 四選一按鈕
+        # 四選一
         for i, option in enumerate(q['options']):
             if st.button(option, key=f"btn_{i}", use_container_width=True):
+                # 計算時間得分
+                elapsed = time.time() - q['start_time']
+                # 基礎10分，每秒扣1分，最低1分
+                points = max(1, 10 - int(elapsed))
+                
                 if option == q['correct']:
                     st.session_state.play_sound = CORRECT_URL
-                    st.toast("正確！", icon="✅")
-                    st.session_state.score += 5
-                    if st.session_state.current_step < 20:
-                        st.session_state.current_step += 1
-                        st.session_state.q = get_new_question()
-                        st.rerun()
-                    else:
-                        st.session_state.game_over = True
-                        st.rerun()
-                else:
-                    st.session_state.play_sound = WRONG_URL
-                    st.session_state.show_feedback = True
-                    st.rerun()
-else:
-    st.balloons()
-    st.success(f"🏆 完成挑戰！得分：{st.session_state.score}")
-    if st.button("重新開始", use_container_width=True):
-        st.session_state.current_step = 1
-        st.session_state.score = 0
-        st.session_state.game_over = False
-        st.session_state.show_feedback = False
-        st.session_state.q = get_new_question()
-        st.rerun()
+                    st.session_state.score += points
