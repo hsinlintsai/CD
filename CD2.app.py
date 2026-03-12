@@ -23,41 +23,20 @@ def save_score(name, score):
 def get_leaderboard(limit=10):
     if os.path.exists(DB_FILE):
         df = pd.read_csv(DB_FILE)
-        # 排序並取前 N 名
         return df.sort_values(by="分數", ascending=False).head(limit)
     return None
 
-# --- 3. CSS 樣式：超大字體與精簡按鈕 ---
+def clear_leaderboard():
+    if os.path.exists(DB_FILE):
+        os.remove(DB_FILE)
+
+# --- 3. CSS 樣式 ---
 st.markdown("""
     <style>
-    /* 選項文字放大至 40px */
-    button[kind="secondary"] p {
-        font-size: 40px !important;
-        font-weight: 900 !important;
-        color: #1E1E1E !important;
-    }
-    /* 選項按鈕樣式 */
-    button[kind="secondary"] {
-        height: 70px !important;
-        border-radius: 12px !important;
-        margin-bottom: 10px !important;
-        border: 2px solid #D3D3D3 !important;
-        background-color: #F8F9FA !important;
-    }
-    /* 「下一題」與「提交」按鈕樣式 */
-    button[kind="primary"] {
-        height: 80px !important;
-        width: 100% !important;
-        background-color: #FF4B4B !important;
-        border: none !important;
-    }
-    button[kind="primary"] p {
-        font-size: 30px !important;
-        font-weight: bold !important;
-        color: white !important;
-    }
-    /* 排行榜表格字體放大 */
-    .stTable { font-size: 24px !important; }
+    button[kind="secondary"] p { font-size: 40px !important; font-weight: 900 !important; }
+    button[kind="secondary"] { height: 70px !important; border-radius: 12px !important; margin-bottom: 10px !important; border: 2px solid #D3D3D3 !important; background-color: #F8F9FA !important; }
+    button[kind="primary"] { height: 80px !important; width: 100% !important; background-color: #FF4B4B !important; border: none !important; }
+    button[kind="primary"] p { font-size: 30px !important; font-weight: bold !important; color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -81,46 +60,35 @@ def get_new_q():
     pool.remove(correct)
     options = random.sample(pool, 3) + [correct]
     random.shuffle(options)
-    return {
-        "text": f"「 {target['s']} 」是什麼？" if mode == 's2n' else f"「 {target['n']} 」的符號？",
-        "correct": correct, "options": options, "start_time": time.time(),
-        "info": f"{target['n']} ({target['s']})"
-    }
+    return {"text": f"「 {target['s']} 」是什麼？" if mode == 's2n' else f"「 {target['n']} 」的符號？",
+            "correct": correct, "options": options, "start_time": time.time(), "info": f"{target['n']} ({target['s']})"}
 
 def play_sound(url):
     st.components.v1.html(f"""<audio autoplay><source src="{url}" type="audio/mpeg"></audio>""", height=0)
 
-# 初始化遊戲狀態
 TOTAL_QUESTIONS = 10
 if 'step' not in st.session_state:
     st.session_state.step, st.session_state.score = 1, 0
     st.session_state.game_over, st.session_state.feedback = False, False
     st.session_state.q = get_new_q()
 
-# --- 5. 介面佈局 (方案一：分頁) ---
+# --- 5. 介面佈局 ---
 tab_game, tab_rank = st.tabs(["🎮 開始挑戰", "🏆 英雄榜"])
 
-# --- 分頁一：遊戲主體 ---
 with tab_game:
     st.title("⚡ 元素 10 題速考挑戰")
-    
     if not st.session_state.game_over:
         st.progress(st.session_state.step / TOTAL_QUESTIONS)
         st.write(f"第 {st.session_state.step}/{TOTAL_QUESTIONS} 題 | 總分: **{st.session_state.score}**")
-        
         q = st.session_state.q
-
         if st.session_state.feedback:
-            st.error(f"### ❌ 答錯了！")
-            st.info(f"正確答案是：**{q['correct']}**")
-            st.write(f"💡 記住囉：{q['info']}")
-            if st.button("我記住了，下一題 ➔", type="primary"):
+            st.error(f"### ❌ 答錯了！正確是：{q['correct']}")
+            if st.button("下一題 ➔", type="primary"):
                 st.session_state.feedback = False
                 if st.session_state.step < TOTAL_QUESTIONS:
                     st.session_state.step += 1
                     st.session_state.q = get_new_q()
-                else:
-                    st.session_state.game_over = True
+                else: st.session_state.game_over = True
                 st.rerun()
         else:
             st.subheader(q['text'])
@@ -128,7 +96,6 @@ with tab_game:
                 if st.button(opt, key=f"opt_{idx}", use_container_width=True):
                     elapsed = time.time() - q['start_time']
                     if opt == q['correct']:
-                        # 計分邏輯：15分起跳，每秒扣2.5分
                         pts = max(1, int(15 - (elapsed * 2.5)))
                         st.session_state.score += pts
                         play_sound("https://www.soundjay.com/buttons/sounds/button-37.mp3")
@@ -136,40 +103,45 @@ with tab_game:
                             st.session_state.step += 1
                             st.session_state.q = get_new_q()
                             st.rerun()
-                        else:
-                            st.session_state.game_over = True
-                            st.rerun()
+                        else: st.session_state.game_over = True; st.rerun()
                     else:
                         play_sound("https://www.soundjay.com/buttons/sounds/button-10.mp3")
-                        st.session_state.feedback = True
-                        st.rerun()
+                        st.session_state.feedback = True; st.rerun()
     else:
         st.balloons()
         st.header(f"🏁 完成！總分：{st.session_state.score}")
-        
         name = st.text_input("輸入大名登入英雄榜：", max_chars=10)
         if st.button("提交成績 🚀", type="primary"):
             if name:
                 save_score(name, st.session_state.score)
-                st.success("成績已存入英雄榜！請切換分頁查看。")
-            else:
-                st.warning("請輸入名字喔！")
-        
+                st.success("已存入英雄榜！")
+            else: st.warning("請輸入名字喔！")
         if st.button("再戰一次 🔄"):
             st.session_state.step, st.session_state.score = 1, 0
             st.session_state.game_over, st.session_state.feedback = False, False
             st.session_state.q = get_new_q()
             st.rerun()
 
-# --- 分頁二：排行榜 ---
+# --- 排行榜標籤頁 ---
 with tab_rank:
-    st.header("🏆 元素週期表英雄榜 (TOP 10)")
+    st.header("🏆 英雄榜 (TOP 10)")
     lb = get_leaderboard(10)
     if lb is not None:
-        # 老師可以在這展示
         st.table(lb)
     else:
-        st.write("目前還沒有戰績，快去挑戰吧！")
+        st.info("目前尚無紀錄。")
     
-    if st.button("🔄 刷新排行榜"):
-        st.rerun()
+    st.divider()
+    
+    # --- 新增：老師專用管理區 ---
+    st.subheader("⚙️ 老師管理區域")
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        if st.button("🔄 刷新榜單"):
+            st.rerun()
+    with col2:
+        confirm = st.checkbox("確認要清空所有紀錄嗎？")
+        if st.button("🗑️ 清除排行榜資料", disabled=not confirm):
+            clear_leaderboard()
+            st.success("排行榜已成功清空！")
+            st.rerun()
