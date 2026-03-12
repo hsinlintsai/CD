@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 # --- 1. 網頁基本設定 ---
-st.set_page_config(page_title="元素週期表時速賽", page_icon="⚡", layout="centered")
+st.set_page_config(page_title="元素時速賽", page_icon="⚡", layout="centered")
 
 # --- 2. 排行榜資料庫功能 ---
 DB_FILE = "leaderboard.csv"
@@ -30,17 +30,41 @@ def clear_leaderboard():
     if os.path.exists(DB_FILE):
         os.remove(DB_FILE)
 
-# --- 3. CSS 樣式 ---
+# --- 3. CSS 樣式修正：強制顏色，防止深色模式隱形 ---
 st.markdown("""
     <style>
-    button[kind="secondary"] p { font-size: 40px !important; font-weight: 900 !important; }
-    button[kind="secondary"] { height: 70px !important; border-radius: 12px !important; margin-bottom: 10px !important; border: 2px solid #D3D3D3 !important; background-color: #F8F9FA !important; }
-    button[kind="primary"] { height: 80px !important; width: 100% !important; background-color: #FF4B4B !important; border: none !important; }
-    button[kind="primary"] p { font-size: 30px !important; font-weight: bold !important; color: white !important; }
+    /* 強制選項按鈕樣式 */
+    button[kind="secondary"] {
+        height: 75px !important;
+        border-radius: 12px !important;
+        margin-bottom: 10px !important;
+        border: 3px solid #4A90E2 !important; /* 加深邊框顏色 */
+        background-color: #FFFFFF !important; /* 強制白色背景 */
+    }
+    /* 強制選項文字顏色為深色 */
+    button[kind="secondary"] p {
+        font-size: 40px !important;
+        font-weight: 900 !important;
+        color: #1A1A1A !important; /* 強制深黑色文字 */
+    }
+    /* 提交與下一題按鈕樣式 (紅色底白字) */
+    button[kind="primary"] {
+        height: 85px !important;
+        width: 100% !important;
+        background-color: #FF4B4B !important;
+        border: none !important;
+    }
+    button[kind="primary"] p {
+        font-size: 32px !important;
+        font-weight: bold !important;
+        color: #FFFFFF !important; /* 強制白色文字 */
+    }
+    /* 表格字體 */
+    .stTable { font-size: 20px !important; color: inherit !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. 遊戲資料與邏輯 ---
+# --- 4. 遊戲資料 ---
 if 'db' not in st.session_state:
     st.session_state.db = [
         {"s": "H", "n": "氫"}, {"s": "He", "n": "氦"}, {"s": "Li", "n": "鋰"}, {"s": "Be", "n": "鈹"},
@@ -81,9 +105,10 @@ with tab_game:
         st.progress(st.session_state.step / TOTAL_QUESTIONS)
         st.write(f"第 {st.session_state.step}/{TOTAL_QUESTIONS} 題 | 總分: **{st.session_state.score}**")
         q = st.session_state.q
+        
         if st.session_state.feedback:
             st.error(f"### ❌ 答錯了！正確是：{q['correct']}")
-            if st.button("下一題 ➔", type="primary"):
+            if st.button("我記住了，下一題 ➔", type="primary"):
                 st.session_state.feedback = False
                 if st.session_state.step < TOTAL_QUESTIONS:
                     st.session_state.step += 1
@@ -92,6 +117,7 @@ with tab_game:
                 st.rerun()
         else:
             st.subheader(q['text'])
+            # 垂直顯示選項，字體超大
             for idx, opt in enumerate(q['options']):
                 if st.button(opt, key=f"opt_{idx}", use_container_width=True):
                     elapsed = time.time() - q['start_time']
@@ -110,7 +136,7 @@ with tab_game:
     else:
         st.balloons()
         st.header(f"🏁 完成！總分：{st.session_state.score}")
-        name = st.text_input("輸入大名登入英雄榜：", max_chars=10)
+        name = st.text_input("輸入大名登錄：", max_chars=10)
         if st.button("提交成績 🚀", type="primary"):
             if name:
                 save_score(name, st.session_state.score)
@@ -122,26 +148,18 @@ with tab_game:
             st.session_state.q = get_new_q()
             st.rerun()
 
-# --- 排行榜標籤頁 ---
 with tab_rank:
     st.header("🏆 英雄榜 (TOP 10)")
     lb = get_leaderboard(10)
     if lb is not None:
         st.table(lb)
-    else:
-        st.info("目前尚無紀錄。")
+    else: st.info("目前尚無紀錄。")
     
     st.divider()
-    
-    # --- 新增：老師專用管理區 ---
-    st.subheader("⚙️ 老師管理區域")
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        if st.button("🔄 刷新榜單"):
-            st.rerun()
-    with col2:
-        confirm = st.checkbox("確認要清空所有紀錄嗎？")
-        if st.button("🗑️ 清除排行榜資料", disabled=not confirm):
-            clear_leaderboard()
-            st.success("排行榜已成功清空！")
-            st.rerun()
+    st.subheader("⚙️ 管理區域")
+    if st.button("🔄 刷新榜單"): st.rerun()
+    confirm = st.checkbox("確認要清空排行榜？")
+    if st.button("🗑️ 立即清空", disabled=not confirm):
+        clear_leaderboard()
+        st.success("已清空！")
+        st.rerun()
