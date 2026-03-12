@@ -4,16 +4,20 @@ import random
 # 設定網頁標題
 st.set_page_config(page_title="元素週期表挑戰賽", page_icon="🧪")
 
-# --- CSS 樣式調整：將按鈕字體放大為 2 倍 ---
+# --- CSS 樣式調整：強力放大按鈕與文字 ---
 st.markdown("""
     <style>
-    div.stButton > button {
-        font-size: 32px !important; /* 字體放大 (約 2 倍) */
-        height: 80px !important;    /* 增加按鈕高度 */
-        border-radius: 15px !important; /* 圓角看起來更像 App */
+    /* 針對 Streamlit 按鈕文字的強力放大 */
+    div.stButton > button p {
+        font-size: 32px !important; /* 文字放大 2 倍 */
         font-weight: bold !important;
     }
-    /* 答錯回饋按鈕的特殊顏色 */
+    div.stButton > button {
+        height: 100px !important;   /* 按鈕高度再增加，更適合點擊 */
+        border-radius: 20px !important;
+        border: 2px solid #4CAF50 !important;
+    }
+    /* 答錯回饋時的特殊按鈕顏色 */
     div.stButton > button:contains("我記住了") {
         background-color: #ff4b4b !important;
         color: white !important;
@@ -21,7 +25,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 1. 元素資料庫
+# 1. 元素資料庫 (國中範圍)
 if 'elements_db' not in st.session_state:
     st.session_state.elements_db = [
         {"s": "H", "n": "氫"}, {"s": "He", "n": "氦"}, {"s": "Li", "n": "鋰"}, {"s": "Be", "n": "鈹"},
@@ -33,10 +37,10 @@ if 'elements_db' not in st.session_state:
         {"s": "Au", "n": "金"}, {"s": "Hg", "n": "汞"}, {"s": "I", "n": "碘"}, {"s": "Ba", "n": "鋇"}
     ]
 
-# 2. 遊戲邏輯
+# 2. 隨機出題邏輯
 def get_new_question():
     target = random.choice(st.session_state.elements_db)
-    mode = random.choice(['s2n', 'n2s'])
+    mode = random.choice(['s2n', 'n2s']) # 符號猜名稱 或 名稱猜符號
     correct_ans = target['n'] if mode == 's2n' else target['s']
     
     all_vals = list(set([el['n'] if mode == 's2n' else el['s'] for el in st.session_state.elements_db]))
@@ -51,6 +55,7 @@ def get_new_question():
         "full_info": f"{target['n']} ({target['s']})"
     }
 
+# 初始化遊戲進度
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
     st.session_state.score = 0
@@ -58,10 +63,11 @@ if 'current_step' not in st.session_state:
     st.session_state.show_feedback = False
     st.session_state.q = get_new_question()
 
-# --- 介面設計 ---
-st.title("🧪 元素週期表大挑戰")
+# --- 介面開始 ---
+st.title("🧪 元素挑戰：20題大進擊")
 
 if not st.session_state.game_over:
+    # 顯示進度
     st.progress(st.session_state.current_step / 20)
     st.write(f"第 {st.session_state.current_step} / 20 題 | 目前得分: {st.session_state.score}")
     
@@ -70,9 +76,9 @@ if not st.session_state.game_over:
     if st.session_state.show_feedback:
         st.error(f"### ❌ 答錯了！")
         st.info(f"正確答案是：**{q['correct']}**")
-        st.write(f"複習一下：{q['full_info']}")
+        st.write(f"複習記憶：{q['full_info']}")
         
-        if st.button("我記住了，下一題 ➔"):
+        if st.button("我記住了，下一題 ➔", use_container_width=True):
             st.session_state.show_feedback = False
             if st.session_state.current_step < 20:
                 st.session_state.current_step += 1
@@ -80,15 +86,17 @@ if not st.session_state.game_over:
             else:
                 st.session_state.game_over = True
             st.rerun()
+
     else:
         st.subheader(q['text'])
-        # 四選一按鈕 (字體已透過 CSS 放大)
+        # 四選一按鈕
         cols = st.columns(2)
         for i, option in enumerate(q['options']):
             with cols[i % 2]:
+                # 設定字體大、按鈕大的選項
                 if st.button(option, key=f"btn_{i}", use_container_width=True):
                     if option == q['correct']:
-                        st.success("✅ 答對了！")
+                        st.toast(f"答對了！+{5}分", icon="⭐")
                         st.session_state.score += 5
                         if st.session_state.current_step < 20:
                             st.session_state.current_step += 1
@@ -100,10 +108,12 @@ if not st.session_state.game_over:
                     else:
                         st.session_state.show_feedback = True
                         st.rerun()
+
 else:
+    # 結算畫面
     st.balloons()
-    st.success(f"🏆 挑戰完成！最終得分：{st.session_state.score} / 100")
-    if st.button("再挑戰一次"):
+    st.success(f"🏆 完成挑戰！你的最終得分：{st.session_state.score} / 100")
+    if st.button("重新開始挑戰", use_container_width=True):
         st.session_state.current_step = 1
         st.session_state.score = 0
         st.session_state.game_over = False
