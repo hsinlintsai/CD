@@ -26,48 +26,39 @@ def get_level_rank(level_name, limit=5):
         return filtered.sort_values(by="分數", ascending=False).head(limit)
     return None
 
-# --- 3. 遊戲資料庫 (含 HTML 下標處理) ---
-LV1_DB = [{"s": "H", "n": "氫"}, {"s": "He", "n": "氦"}, {"s": "Li", "n": "鋰"}, {"s": "Be", "n": "鈹"}, {"s": "B", "n": "硼"}, {"s": "C", "n": "碳"}, {"s": "N", "n": "氮"}, {"s": "O", "n": "氧"}, {"s": "F", "n": "氟"}, {"s": "Ne", "n": "氖"}, {"s": "Na", "n": "鈉"}, {"s": "Mg", "n": "鎂"}, {"s": "Al", "n": "鋁"}, {"s": "Si", "n": "矽"}, {"s": "P", "n": "磷"}, {"s": "S", "n": "硫"}, {"s": "Cl", "n": "氯"}, {"s": "Ar", "n": "氬"}, {"s": "K", "n": "鉀"}, {"s": "Ca", "n": "鈣"}, {"s": "Sc", "n": "鈧"}, {"s": "Ti", "n": "鈦"}, {"s": "V", "n": "釩"}, {"s": "Cr", "n": "鉻"}, {"s": "Mn", "n": "錳"}, {"s": "Fe", "n": "鐵"}, {"s": "Co", "n": "鈷"}, {"s": "Ni", "n": "鎳"}, {"s": "Cu", "n": "銅"}, {"s": "Zn", "n": "鋅"}]
-
-LV2_DB = [{"s": "Li", "n": "鋰"}, {"s": "Na", "n": "鈉"}, {"s": "K", "n": "鉀"}, {"s": "Be", "n": "鈹"}, {"s": "Mg", "n": "鎂"}, {"s": "Ca", "n": "鈣"}, {"s": "B", "n": "硼"}, {"s": "Al", "n": "鋁"}, {"s": "C", "n": "碳"}, {"s": "Si", "n": "矽"}, {"s": "N", "n": "氮"}, {"s": "P", "n": "磷"}, {"s": "O", "n": "氧"}, {"s": "S", "n": "硫"}, {"s": "F", "n": "氟"}, {"s": "Cl", "n": "氯"}, {"s": "Br", "n": "溴"}, {"s": "I", "n": "碘"}, {"s": "He", "n": "氦"}, {"s": "Ne", "n": "氖"}, {"s": "Ar", "n": "氬"}, {"s": "Kr", "n": "氪"}, {"s": "Xe", "n": "氙"}]
-
-# 第三關：加入 HTML <sub> 標籤讓數字下標
+# --- 3. 遊戲資料庫 (含 HTML 下標) ---
+LV1_DB = [{"s": "H", "n": "氫"}, {"s": "He", "n": "氦"}, {"s": "Li", "n": "鋰"}, {"s": "Be", "n": "鈹"}, {"s": "B", "n": "硼"}, {"s": "C", "n": "碳"}, {"s": "N", "n": "氮"}, {"s": "O", "n": "氧"}, {"s": "F", "n": "氟"}, {"s": "Ne", "n": "氖"}, {"s": "Na", "n": "鈉"}, {"s": "Mg", "n": "鎂"}, {"s": "Al", "n": "鋁"}, {"s": "Si", "n": "矽"}, {"s": "P", "n": "磷"}, {"s": "S", "n": "硫"}, {"s": "Cl", "n": "氯"}, {"s": "Ar", "n": "氬"}, {"s": "K", "n": "鉀"}, {"s": "Ca", "n": "鈣"}, {"s": "Fe", "n": "鐵"}, {"s": "Cu", "n": "銅"}, {"s": "Zn", "n": "鋅"}]
+LV2_DB = [{"s": "Li", "n": "鋰"}, {"s": "Na", "n": "鈉"}, {"s": "K", "n": "鉀"}, {"s": "Be", "n": "鈹"}, {"s": "Mg", "n": "鎂"}, {"s": "Ca", "n": "鈣"}, {"s": "B", "n": "硼"}, {"s": "Al", "n": "鋁"}, {"s": "C", "n": "碳"}, {"s": "Si", "n": "矽"}, {"s": "N", "n": "氮"}, {"s": "P", "n": "磷"}, {"s": "O", "n": "氧"}, {"s": "S", "n": "硫"}, {"s": "F", "n": "氟"}, {"s": "Cl", "n": "氯"}, {"s": "Br", "n": "溴"}, {"s": "I", "n": "碘"}, {"s": "He", "n": "氦"}, {"s": "Ne", "n": "氖"}, {"s": "Ar", "n": "氬"}]
 LV3_DB = [
-    {"s": "H<sub>2</sub>O", "n": "水"}, 
-    {"s": "CO<sub>2</sub>", "n": "二氧化碳"}, 
-    {"s": "NaCl", "n": "食鹽(氯化鈉)"}, 
-    {"s": "HCl", "n": "鹽酸"}, 
-    {"s": "H<sub>2</sub>SO<sub>4</sub>", "n": "硫酸"}, 
-    {"s": "HNO<sub>3</sub>", "n": "硝酸"}, 
-    {"s": "NaOH", "n": "氫氧化鈉"}, 
-    {"s": "CaCO<sub>3</sub>", "n": "碳酸鈣"}, 
-    {"s": "NaHCO<sub>3</sub>", "n": "小蘇打"}, 
-    {"s": "Na<sub>2</sub>CO<sub>3</sub>", "n": "蘇打"}, 
-    {"s": "NH<sub>3</sub>", "n": "氨氣"}, 
-    {"s": "CH<sub>4</sub>", "n": "甲烷"}, 
-    {"s": "C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>", "n": "葡萄糖"}, 
-    {"s": "C<sub>2</sub>H<sub>5</sub>OH", "n": "酒精"}, 
-    {"s": "CH<sub>3</sub>COOH", "n": "醋酸"}, 
-    {"s": "CaO", "n": "生石灰"}, 
-    {"s": "Ca(OH)<sub>2</sub>", "n": "熟石灰"}, 
-    {"s": "H<sub>2</sub>O<sub>2</sub>", "n": "雙氧水"}
+    {"s": "H<sub>2</sub>O", "n": "水"}, {"s": "CO<sub>2</sub>", "n": "二氧化碳"}, {"s": "NaCl", "n": "食鹽"}, {"s": "HCl", "n": "鹽酸"}, 
+    {"s": "H<sub>2</sub>SO<sub>4</sub>", "n": "硫酸"}, {"s": "HNO<sub>3</sub>", "n": "硝酸"}, {"s": "NaOH", "n": "氫氧化鈉"}, 
+    {"s": "CaCO<sub>3</sub>", "n": "碳酸鈣"}, {"s": "NaHCO<sub>3</sub>", "n": "小蘇打"}, {"s": "Na<sub>2</sub>CO<sub>3</sub>", "n": "蘇打"}, 
+    {"s": "NH<sub>3</sub>", "n": "氨氣"}, {"s": "CH<sub>4</sub>", "n": "甲烷"}, {"s": "C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>", "n": "葡萄糖"}, 
+    {"s": "C<sub>2</sub>H<sub>5</sub>OH", "n": "酒精"}, {"s": "CH<sub>3</sub>COOH", "n": "醋酸"}, {"s": "CaO", "n": "生石灰"}, 
+    {"s": "Ca(OH)<sub>2</sub>", "n": "熟石灰"}, {"s": "H<sub>2</sub>O<sub>2</sub>", "n": "雙氧水"}
 ]
 
-# --- 4. CSS 樣式 ---
+# --- 4. CSS 樣式修正 (強化字體顯現) ---
 st.markdown("""
     <style>
-    .block-container { padding-top: 1.5rem !important; }
+    .block-container { padding-top: 1rem !important; }
+    /* 選項按鈕：強化字體自適應 */
     button[kind="secondary"] {
-        height: 9vh !important; min-height: 50px !important;
+        height: 10vh !important; min-height: 55px !important;
         border-radius: 12px !important; margin-bottom: 8px !important;
         border: 2px solid #4A90E2 !important; background-color: #FFFFFF !important;
     }
-    button[kind="secondary"] span { font-size: clamp(18px, 5vw, 32px) !important; font-weight: 800 !important; color: #1A1A1A !important; }
-    .game-font button[kind="secondary"] span { font-size: clamp(24px, 7vh, 45px) !important; }
-    button[kind="primary"] { height: 10vh !important; background-color: #FF4B4B !important; }
+    /* 強制放大按鈕內的文字 span */
+    button[kind="secondary"] span { 
+        font-size: clamp(24px, 6vh, 45px) !important; 
+        font-weight: 900 !important; color: #1A1A1A !important; 
+    }
+    /* 遊戲中標題稍微縮小給返回鍵空間 */
+    .game-header { display: flex; justify-content: space-between; align-items: center; }
+    
+    button[kind="primary"] { height: 9vh !important; background-color: #FF4B4B !important; }
     button[kind="primary"] p { font-size: clamp(20px, 4vh, 32px) !important; color: #FFFFFF !important; }
     #MainMenu, footer, header {visibility: hidden;}
-    /* 修正下標數字位置 */
     sub { font-size: 0.6em !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -111,10 +102,17 @@ with tab_game:
             st.rerun()
 
     elif st.session_state.game_state == "PLAYING":
-        st.write(f"{st.session_state.level_name} | 第 {st.session_state.step}/10 題 | 分數: {st.session_state.score}")
+        # 頂部返回區
+        col_info, col_back = st.columns([3, 1])
+        with col_info:
+            st.write(f"第 {st.session_state.step}/10 題 | 分數: {st.session_state.score}")
+        with col_back:
+            if st.button("⬅️ 返回", key="back_home"):
+                st.session_state.game_state = "HOME"; st.rerun()
+        
         q = st.session_state.q
         if st.session_state.feedback:
-            st.markdown(f"❌ 答錯！正確是：**{q['correct']}**", unsafe_allow_html=True)
+            st.error(f"❌ 答錯！正確是：{q['correct']}")
             if st.button("下一題 ➔", type="primary", use_container_width=True):
                 st.session_state.feedback = False
                 if st.session_state.step < 10:
@@ -124,9 +122,7 @@ with tab_game:
                 st.rerun()
         else:
             st.markdown(f"### {q['text']}", unsafe_allow_html=True)
-            st.markdown('<div class="game-font">', unsafe_allow_html=True)
             for idx, opt in enumerate(q['options']):
-                # 使用 markdown 渲染按鈕文字以支援 <sub>
                 if st.button(opt, key=f"opt_{idx}", use_container_width=True):
                     elapsed = time.time() - q['start_time']
                     if opt == q['correct']:
@@ -137,41 +133,33 @@ with tab_game:
                             st.session_state.q = get_new_q(st.session_state.current_db); st.rerun()
                         else: st.session_state.game_state = "FINISHED"; st.rerun()
                     else: st.session_state.feedback = True; st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
 
     elif st.session_state.game_state == "FINISHED":
         st.balloons()
         st.header(f"🏁 {st.session_state.level_name} 完成！")
-        st.subheader(f"得分：{st.session_state.score}")
-        name = st.text_input("輸入名字登入榮譽榜：", max_chars=8)
+        st.subheader(f"最終得分：{st.session_state.score}")
+        name = st.text_input("輸入名字登錄榮譽榜：", max_chars=8)
         if st.button("提交並返回主頁 🚀", type="primary", use_container_width=True):
             if name: 
                 save_score(name, st.session_state.score, st.session_state.level_name)
                 st.session_state.game_state = "HOME"; st.rerun()
             else: st.warning("請輸入名字喔！")
+        if st.button("不留名直接返回", use_container_width=True):
+            st.session_state.game_state = "HOME"; st.rerun()
 
 with tab_rank:
     st.header("🏆 榮譽榜")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.subheader("第一關")
-        lb1 = get_level_rank("第一關")
-        if lb1 is not None: st.table(lb1[["姓名", "分數"]])
-    
-    with col2:
-        st.subheader("第二關")
-        lb2 = get_level_rank("第二關")
-        if lb2 is not None: st.table(lb2[["姓名", "分數"]])
-        
-    with col3:
-        st.subheader("第三關")
-        lb3 = get_level_rank("第三關")
-        if lb3 is not None: st.table(lb3[["姓名", "分數"]])
+    c1, c2, c3 = st.columns(3)
+    with c1: st.subheader("L1"); r1 = get_level_rank("第一關"); st.table(r1[["姓名", "分數"]]) if r1 is not None else st.write("無")
+    with c2: st.subheader("L2"); r2 = get_level_rank("第二關"); st.table(r2[["姓名", "分數"]]) if r2 is not None else st.write("無")
+    with c3: st.subheader("L3"); r3 = get_level_rank("第三關"); st.table(r3[["姓名", "分數"]]) if r3 is not None else st.write("無")
 
     st.divider()
-    if st.button("🔄 刷新榜單"): st.rerun()
-    confirm = st.checkbox("管理員清除資料")
-    if st.button("🗑️ 清空", disabled=not confirm):
+    # 密碼保護清除區
+    st.subheader("⚙️ 管理員選單")
+    pwd = st.text_input("輸入清除密碼：", type="password")
+    if st.button("🗑️ 執行清空排行榜", disabled=(pwd != "9306696"), use_container_width=True):
         if os.path.exists(DB_FILE): os.remove(DB_FILE)
+        st.success("排行榜已成功歸零！")
         st.rerun()
+    if st.button("🔄 刷新頁面"): st.rerun()
