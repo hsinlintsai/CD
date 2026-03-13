@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="元素挑戰賽", page_icon="⚡", layout="centered")
 
 # --- 2. 排行榜邏輯 (穩定版) ---
-DB_FILE = "leaderboard_final_v11.csv"
+DB_FILE = "leaderboard_final_v12.csv"
 
 def save_score(name, score, level):
     new_data = pd.DataFrame([[name, score, level, time.strftime("%m/%d %H:%M")]], 
@@ -39,47 +39,55 @@ LV1_DB = [{"s": "H", "n": "氫"}, {"s": "He", "n": "氦"}, {"s": "Li", "n": "鋰
 LV2_DB = [{"s": "Li", "n": "鋰"}, {"s": "Na", "n": "鈉"}, {"s": "K", "n": "鉀"}, {"s": "Be", "n": "鈹"}, {"s": "Mg", "n": "鎂"}, {"s": "Ca", "n": "鈣"}, {"s": "B", "n": "硼"}, {"s": "Al", "n": "鋁"}, {"s": "C", "n": "碳"}, {"s": "Si", "n": "矽"}, {"s": "N", "n": "氮"}, {"s": "P", "n": "磷"}, {"s": "O", "n": "氧"}, {"s": "S", "n": "硫"}, {"s": "F", "n": "氟"}, {"s": "Cl", "n": "氯"}, {"s": "Br", "n": "溴"}, {"s": "I", "n": "碘"}]
 LV3_DB = [{"s": "H₂O", "n": "水"}, {"s": "CO₂", "n": "二氧化碳"}, {"s": "NaCl", "n": "食鹽"}, {"s": "HCl", "n": "鹽酸"}, {"s": "H₂SO₄", "n": "硫酸"}, {"s": "HNO₃", "n": "硝酸"}, {"s": "NaOH", "n": "氫氧化鈉"}, {"s": "CaCO₃", "n": "碳酸鈣"}, {"s": "NaHCO₃", "n": "小蘇打"}]
 
-# --- 4. CSS 樣式修正 (針對跨裝置優化) ---
+# --- 4. CSS 樣式修正 (針對 Safari 深度優化) ---
 st.markdown("""
     <style>
     .block-container { padding-top: 0.5rem !important; }
     
-    /* 選項框：維持巨大字體但限制最大值防止電腦版爆開 */
-    div.stButton > button[kind="secondary"] div[data-testid="stMarkdownContainer"] p {
-        font-size: clamp(24px, 7vw, 50px) !important;
-        font-weight: 900 !important;
-        color: #1A1A1A !important;
-    }
+    /* 選項框：Safari 字體修正 */
     div.stButton > button[kind="secondary"] {
-        height: 11vh !important;
+        height: 10vh !important;
         min-height: 60px !important;
         background-color: #FFFFFF !important;
         border: 2px solid #4A90E2 !important;
         border-radius: 12px !important;
-    }
-
-    /* 極小化返回鍵：使用相對單位 */
-    .mini-back button {
-        height: 1.8em !important;
-        padding: 0px 0.5em !important;
-        font-size: 0.7em !important;
-        min-height: 20px !important;
-    }
-
-    /* 管理員列按鈕：修正電腦版文字過大問題 */
-    .admin-row button {
-        height: 2.2em !important;
-        min-height: 30px !important;
-        font-size: 0.85em !important; /* 改用 em 隨父層縮放 */
         padding: 0px !important;
+        overflow: hidden !important;
+    }
+    
+    div.stButton > button[kind="secondary"] div[data-testid="stMarkdownContainer"] p {
+        font-size: clamp(22px, 6vw, 45px) !important; /* 稍微下修上限以適應 Safari */
+        font-weight: 900 !important;
+        color: #1A1A1A !important;
+        line-height: 1.1 !important;
+        margin: 0px !important;
+        padding: 0px !important;
+    }
+
+    /* 迷你返回鍵：固定寬高度確保不爆框 */
+    .mini-back button {
+        height: 24px !important;
+        width: 65px !important;
+        font-size: 10px !important;
+        padding: 0px !important;
+        line-height: 24px !important;
+    }
+
+    /* 管理員列：強制小字體 */
+    .admin-row button {
+        height: 32px !important;
+        font-size: 13px !important;
+        padding: 0px 5px !important;
+        line-height: 32px !important;
     }
     
     .admin-row input {
-        height: 2.2em !important;
+        height: 32px !important;
+        font-size: 13px !important;
     }
 
     button[kind="primary"] { background-color: #FF4B4B !important; height: 9vh !important; }
-    button[kind="primary"] p { font-size: 1.5em !important; color: white !important; }
+    button[kind="primary"] p { font-size: 1.3em !important; color: white !important; }
     
     #MainMenu, footer, header {visibility: hidden;}
     </style>
@@ -165,16 +173,15 @@ with tab_rank:
             st.write(f"**{lv}**")
             lb = get_level_rank(lv)
             if lb is not None: st.table(lb[["姓名", "分數"]])
-            else: st.caption("尚無資料")
+            else: st.caption("無資料")
     
     st.divider()
-    # 管理員區塊使用自定義 CSS 類別
     st.markdown('<div class="admin-row">', unsafe_allow_html=True)
     c_pwd, c_clr, c_ref = st.columns([2, 1, 1])
-    with c_pwd: pwd = st.text_input("密碼", type="password", label_visibility="collapsed", placeholder="Pass")
+    with c_pwd: pwd = st.text_input("Pwd", type="password", label_visibility="collapsed", placeholder="密碼")
     with c_clr:
-        if st.button("🗑️清空", disabled=(pwd != "9306696"), use_container_width=True):
+        if st.button("清空", disabled=(pwd != "9306696"), use_container_width=True):
             if os.path.exists(DB_FILE): os.remove(DB_FILE)
             st.rerun()
-    with c_ref: st.button("🔄刷新", use_container_width=True)
+    with c_ref: st.button("刷新", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
